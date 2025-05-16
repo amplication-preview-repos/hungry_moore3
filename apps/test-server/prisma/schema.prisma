@@ -1,0 +1,167 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DB_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  addresses Address[]
+  age       Int       @default(0)
+  cart      Cart?
+  id        Int       @id @default(autoincrement())
+  inactive  Boolean   @default(false)
+  isAdmin   Boolean   @default(false)
+  mobile    String    @unique
+  name      String?
+  orders    Order[]
+}
+
+model Address {
+  address   String
+  id        Int     @id @default(autoincrement())
+  isPrimary Boolean @default(false)
+  orders    Order[]
+  pincode   Int
+  user      User    @relation(fields: [userid], references: [id])
+  userid    Int
+}
+
+model Cart {
+  id       Int        @id @default(autoincrement())
+  products CartItem[]
+  user     User       @relation(fields: [userId], references: [id])
+  userId   Int        @unique
+}
+
+model CartItem {
+  cart      Cart    @relation(fields: [cartId], references: [id])
+  cartId    Int
+  color     Color   @relation(fields: [colorid], references: [id])
+  colorid   Int
+  id        Int     @id @default(autoincrement())
+  price     Int
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+  quantity  Int
+  size      Size    @relation(fields: [sizeid], references: [id])
+  sizeid    Int
+}
+
+model Order {
+  address   Address         @relation(fields: [addressid], references: [id])
+  addressid Int
+  id        Int             @id @default(autoincrement())
+  payment   Payment?
+  paymentId Int?            @unique
+  products  OrderItem[]
+  status    EnumOrderStatus
+  total     Int
+  user      User            @relation(fields: [userId], references: [id])
+  userId    Int
+}
+
+model OrderItem {
+  cart      Order   @relation(fields: [cartId], references: [id])
+  cartId    Int
+  id        Int     @id @default(autoincrement())
+  price     Int
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+  quantity  Int
+}
+
+model Product {
+  cartItem    CartItem[]
+  cartItems   OrderItem[]
+  color       Color[]
+  description String
+  discount    Decimal
+  id          Int              @id @default(autoincrement())
+  images      String
+  name        String
+  price       Decimal
+  size        Size[]
+  timer       Timer?           @relation(fields: [timerid], references: [id])
+  timerid     Int?
+  variants    ProductVariant[]
+}
+
+model Size {
+  cartItem   CartItem[]
+  id         Int              @id @default(autoincrement())
+  product    Product          @relation(fields: [productint], references: [id])
+  productint Int
+  size       String
+  sizeGuid   String
+  variants   ProductVariant[]
+}
+
+model Color {
+  cartItem   CartItem[]
+  color      String
+  colorGuid  String
+  id         Int              @id @default(autoincrement())
+  product    Product          @relation(fields: [productint], references: [id])
+  productint Int
+  variants   ProductVariant[]
+}
+
+model ProductVariant {
+  color     Color    @relation(fields: [colorId], references: [id])
+  colorId   Int
+  id        Int      @id @default(autoincrement())
+  price     Decimal?
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  quantity  Int
+  size      Size     @relation(fields: [sizeId], references: [id])
+  sizeId    Int
+  sku       String?
+}
+
+model Timer {
+  discount    Int
+  discription String
+  endson      DateTime
+  id          Int       @id @default(autoincrement())
+  name        String
+  products    Product[]
+}
+
+model Payment {
+  amount        Int
+  fromField     String            @map("from")
+  id            Int               @id @default(autoincrement())
+  order         Order?            @relation(fields: [orderId], references: [id])
+  orderId       Int?              @unique
+  status        EnumPaymentStatus
+  to            String
+  transactionId String            @map("TransactionId")
+  type          EnumPaymentType
+}
+
+enum EnumOrderStatus {
+  PENDING
+  PROCESSING
+  DISPATCHED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum EnumPaymentStatus {
+  PENDING
+  FAILED
+  SUCCESS
+  REFUNDED
+  CANCELLED
+}
+
+enum EnumPaymentType {
+  CASH_ON_DELIVERY
+  CARD
+  UPI
+}
